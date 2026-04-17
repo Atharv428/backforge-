@@ -42,50 +42,7 @@
  * ============================================================
  */
 
-// ===== DUMMY DATA =====
 
-const DUMMY_USERS = [
-  { rank: 1, username: "tourneysolver", name: "Alex Chen", solved: 847, points: 12450, rating: 2891, avatar: "AC", color: "#58a6ff" },
-  { rank: 2, username: "codemaster99", name: "Priya Sharma", solved: 812, points: 11980, rating: 2754, avatar: "PS", color: "#bc8cff" },
-  { rank: 3, username: "algo_wizard", name: "Marcus Lee", solved: 798, points: 11200, rating: 2701, avatar: "ML", color: "#3fb950" },
-  { rank: 4, username: "devninja42", name: "Sara Kim", solved: 765, points: 10850, rating: 2634, avatar: "SK", color: "#e3b341" },
-  { rank: 5, username: "bytecruncher", name: "James Wu", solved: 741, points: 10200, rating: 2589, avatar: "JW", color: "#f85149" },
-  { rank: 6, username: "recursion_fan", name: "Lena Patel", solved: 720, points: 9870, rating: 2512, avatar: "LP", color: "#58a6ff" },
-  { rank: 7, username: "stackoverflower", name: "Tom Nguyen", solved: 698, points: 9450, rating: 2478, avatar: "TN", color: "#bc8cff" },
-  { rank: 8, username: "dp_queen", name: "Aisha Johnson", solved: 675, points: 9100, rating: 2401, avatar: "AJ", color: "#3fb950" },
-  { rank: 9, username: "greedy_gopher", name: "Ryan Park", solved: 654, points: 8750, rating: 2356, avatar: "RP", color: "#e3b341" },
-  { rank: 10, username: "binarysearch_pro", name: "Mei Zhang", solved: 631, points: 8400, rating: 2289, avatar: "MZ", color: "#f85149" }
-];
-
-const DUMMY_SUBMISSIONS = [
-  { id: 1, problem: "Two Sum", problemId: 1, status: "Accepted", language: "Python", runtime: "52 ms", memory: "14.2 MB", time: "2 hours ago" },
-  { id: 2, problem: "Valid Parentheses", problemId: 6, status: "Accepted", language: "JavaScript", runtime: "68 ms", memory: "12.8 MB", time: "5 hours ago" },
-  { id: 3, problem: "Add Two Numbers", problemId: 2, status: "Wrong Answer", language: "C++", runtime: "N/A", memory: "N/A", time: "1 day ago" },
-  { id: 4, problem: "Maximum Subarray", problemId: 8, status: "Accepted", language: "Java", runtime: "1 ms", memory: "44.1 MB", time: "2 days ago" },
-  { id: 5, problem: "Longest Substring Without Repeating Characters", problemId: 3, status: "Runtime Error", language: "Python", runtime: "N/A", memory: "N/A", time: "3 days ago" },
-  { id: 6, problem: "Climbing Stairs", problemId: 11, status: "Accepted", language: "JavaScript", runtime: "45 ms", memory: "11.9 MB", time: "4 days ago" },
-  { id: 7, problem: "Median of Two Sorted Arrays", problemId: 4, status: "Time Limit Exceeded", language: "Python", runtime: "N/A", memory: "N/A", time: "5 days ago" },
-  { id: 8, problem: "Merge Two Sorted Lists", problemId: 7, status: "Accepted", language: "C++", runtime: "4 ms", memory: "14.5 MB", time: "1 week ago" }
-];
-
-const DUMMY_CONTESTS = [
-  { id: 1, name: "Weekly Contest 389", status: "upcoming", start: "2026-04-05T10:00:00", duration: "1h 30m", participants: 0, problems: 4 },
-  { id: 2, name: "Biweekly Contest 127", status: "upcoming", start: "2026-04-07T14:00:00", duration: "1h 30m", participants: 0, problems: 4 },
-  { id: 3, name: "CodeArena Spring Championship", status: "upcoming", start: "2026-04-12T09:00:00", duration: "3h 00m", participants: 0, problems: 6 },
-  { id: 4, name: "Weekly Contest 388", status: "ongoing", start: "2026-04-02T10:00:00", duration: "1h 30m", participants: 8421, problems: 4 },
-  { id: 5, name: "Weekly Contest 387", status: "past", start: "2026-03-26T10:00:00", duration: "1h 30m", participants: 9102, problems: 4 },
-  { id: 6, name: "Biweekly Contest 126", status: "past", start: "2026-03-22T14:00:00", duration: "1h 30m", participants: 7854, problems: 4 },
-  { id: 7, name: "Weekly Contest 386", status: "past", start: "2026-03-19T10:00:00", duration: "1h 30m", participants: 8765, problems: 4 }
-];
-
-const AI_HINTS = [
-  "Think about what data structure allows O(1) lookups. A hash map might be your best friend here.",
-  "Consider the sliding window technique — it can reduce O(n²) to O(n) for substring problems.",
-  "Dynamic programming often helps when you see overlapping subproblems. Try defining dp[i] as the answer for the first i elements.",
-  "Binary search works on any monotonic function, not just sorted arrays. Can you define a condition that's monotonic?",
-  "For tree problems, think recursively: what does the function return for a leaf node? Build up from there.",
-  "Greedy works when a locally optimal choice leads to a globally optimal solution. Can you prove that here?"
-];
 
 const CODE_TEMPLATES = {
   python: `def solution(nums, target):
@@ -234,7 +191,7 @@ function renderFooter(container) {
 
 // ===== PROBLEMS PAGE =====
 function initProblemsPage() {
-  fetch('data/problems.json')
+  fetch('/api/problems')
     .then(r => r.json())
     .then(problems => renderProblemsTable(problems))
     .catch(() => {
@@ -317,7 +274,7 @@ function initProblemPage() {
   const params = new URLSearchParams(window.location.search);
   const id = parseInt(params.get('id')) || 1;
 
-  fetch('data/problems.json')
+  fetch('/api/problems')
     .then(r => r.json())
     .then(problems => {
       const p = problems.find(x => x.id === id) || problems[0];
@@ -425,18 +382,24 @@ function initAIHint() {
   const newHintBtn = document.getElementById('new-hint-btn');
   if (!btn || !panel) return;
 
+  function loadAndShowHint() {
+    fetch('/api/ai/hint')
+      .then(r => r.json())
+      .then(hints => {
+        hintText.textContent = hints[Math.floor(Math.random() * hints.length)];
+      });
+  }
+
   btn.addEventListener('click', () => {
     panel.classList.toggle('open');
     if (panel.classList.contains('open')) {
-      // TODO: POST /api/ai/hint
-      hintText.textContent = AI_HINTS[Math.floor(Math.random() * AI_HINTS.length)];
+      loadAndShowHint();
     }
   });
 
   if (newHintBtn) {
     newHintBtn.addEventListener('click', () => {
-      // TODO: POST /api/ai/hint with current code context
-      hintText.textContent = AI_HINTS[Math.floor(Math.random() * AI_HINTS.length)];
+      loadAndShowHint();
     });
   }
 
@@ -449,57 +412,82 @@ function initAIHint() {
 function initLeaderboard() {
   const tbody = document.getElementById('leaderboard-tbody');
   if (!tbody) return;
-  // TODO: GET /api/leaderboard
-  tbody.innerHTML = DUMMY_USERS.map(u => {
-    const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
-    const barWidth = Math.round((u.rating / 3000) * 80);
-    return `
-      <tr>
-        <td><span class="${rankClass}">${u.rank}</span></td>
-        <td>
-          <div class="user-cell">
-            <div class="avatar" style="background:${u.color}18;color:${u.color}">${u.avatar}</div>
-            <div>
-              <div style="font-weight:600;font-size:0.875rem;letter-spacing:-0.01em">${u.username}</div>
-              <div style="font-size:0.75rem;color:var(--text-muted)">${u.name}</div>
-            </div>
-          </div>
-        </td>
-        <td style="font-weight:600;font-variant-numeric:tabular-nums">${u.solved}</td>
-        <td style="color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums">${u.points.toLocaleString()}</td>
-        <td>
-          <div class="rating-display">
-            <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${barWidth}px"></div></div>
-            <span style="font-weight:700;color:var(--purple);font-variant-numeric:tabular-nums">${u.rating}</span>
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
+  fetch('/api/leaderboard')
+    .then(r => r.json())
+    .then(users => {
+      tbody.innerHTML = users.map(u => {
+        const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
+        const barWidth = Math.round((u.rating / 3000) * 80);
+        return `
+          <tr>
+            <td><span class="${rankClass}">${u.rank}</span></td>
+            <td>
+              <div class="user-cell">
+                <div class="avatar" style="background:${u.color}18;color:${u.color}">${u.avatar}</div>
+                <div>
+                  <div style="font-weight:600;font-size:0.875rem;letter-spacing:-0.01em">${u.username}</div>
+                  <div style="font-size:0.75rem;color:var(--text-muted)">${u.name}</div>
+                </div>
+              </div>
+            </td>
+            <td style="font-weight:600;font-variant-numeric:tabular-nums">${u.solved}</td>
+            <td style="color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums">${u.points.toLocaleString()}</td>
+            <td>
+              <div class="rating-display">
+                <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${barWidth}px"></div></div>
+                <span style="font-weight:700;color:var(--purple);font-variant-numeric:tabular-nums">${u.rating}</span>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+    });
 }
 
 // ===== SUBMISSIONS PAGE =====
 function initSubmissionsPage() {
   const tbody = document.getElementById('submissions-tbody');
   if (!tbody) return;
-  // TODO: GET /api/submissions
-  tbody.innerHTML = DUMMY_SUBMISSIONS.map(s => `
-    <tr>
-      <td><a href="problem.html?id=${s.problemId}" style="color:var(--accent)">${s.problem}</a></td>
-      <td>${getSubmissionBadge(s.status)}</td>
-      <td><span class="tag">${s.language}</span></td>
-      <td style="color:var(--text-secondary)">${s.runtime}</td>
-      <td style="color:var(--text-secondary)">${s.memory}</td>
-      <td style="color:var(--text-muted);font-size:0.8rem">${s.time}</td>
-    </tr>`).join('');
+  fetch('/api/submissions')
+    .then(r => r.json())
+    .then(submissions => {
+      tbody.innerHTML = submissions.map(s => `
+        <tr>
+          <td><a href="problem.html?id=${s.problemId}" style="color:var(--accent)">${s.problem}</a></td>
+          <td>${getSubmissionBadge(s.status)}</td>
+          <td><span class="tag">${s.language}</span></td>
+          <td style="color:var(--text-secondary)">${s.runtime}</td>
+          <td style="color:var(--text-secondary)">${s.memory}</td>
+          <td style="color:var(--text-muted);font-size:0.8rem">${s.time}</td>
+        </tr>`).join('');
+    });
 }
 
 // ===== CONTESTS PAGE =====
 function initContestsPage() {
-  // TODO: GET /api/contests
+  fetch('/api/contests')
+    .then(r => r.json())
+    .then(contests => renderContests(contests))
+    .catch(err => {
+      console.error('Failed to load contests:', err);
+      // Fallback or display error message
+    });
+}
+
+function renderContests(contests) {
   ['upcoming', 'ongoing', 'past'].forEach(type => {
     const el = document.getElementById(`${type}-contests`);
     if (!el) return;
-    const list = DUMMY_CONTESTS.filter(c => c.status === type);
+    const list = contests.filter(c => c.status === type);
+    
+    if (list.length === 0) {
+      if (type === 'ongoing') {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem;padding:1rem 0">No contests running right now.</div>';
+      } else {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem;padding:1rem 0">No contests available.</div>';
+      }
+      return;
+    }
+
     el.innerHTML = list.map(c => {
       const pillClass = { upcoming: 'pill-upcoming', ongoing: 'pill-ongoing', past: 'pill-past' }[c.status];
       const pillLabel = { upcoming: 'Upcoming', ongoing: 'Live', past: 'Ended' }[c.status];
@@ -516,16 +504,16 @@ function initContestsPage() {
         </div>
         ${c.status === 'upcoming' ? `<div class="countdown-text" id="cd-${c.id}">Starts in ${getCountdown(c.start)}</div>` : ''}
         <div style="margin-top:1rem;display:flex;gap:0.6rem">
-          ${c.status === 'upcoming' ? `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>` : ''}
+          ${c.status === 'upcoming' ? (c.registered ? `<button class="btn btn-success btn-sm" style="opacity:0.8;cursor:default" disabled>Registered</button>` : `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>`) : ''}
           ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id})">Enter Contest</button>` : ''}
-          ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm">View Results</button>` : ''}
-          <button class="btn btn-ghost btn-sm">Details</button>
+          ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm" onclick="window.location.href='contest.html?id=${c.id}'">View Results</button>` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="window.location.href='contest.html?id=${c.id}'">Details</button>
         </div>
       </div>`}).join('');
   });
 
   setInterval(() => {
-    DUMMY_CONTESTS.filter(c => c.status === 'upcoming').forEach(c => {
+    contests.filter(c => c.status === 'upcoming').forEach(c => {
       const el = document.getElementById(`cd-${c.id}`);
       if (el) el.textContent = `Starts in ${getCountdown(c.start)}`;
     });
@@ -533,12 +521,71 @@ function initContestsPage() {
 }
 
 window.registerContest = (id) => {
-  // TODO: POST /api/contests/:id/register
-  alert(`Registered for contest #${id}! (Connect to backend to persist)`);
+  fetch(`/api/contests/${id}/register`, { method: 'POST' })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        alert('Successfully registered!');
+        initContestsPage(); // Refresh to show updated participants count
+      } else {
+        alert(res.message || 'Failed to register');
+      }
+    })
+    .catch(err => alert('Error registering: ' + err));
 };
+
 window.enterContest = (id) => {
-  alert(`Entering contest #${id}! (Backend needed for contest problems)`);
+  window.location.href = `contest.html?id=${id}`;
 };
+
+// ===== CONTEST DETAIL PAGE =====
+function initContestDetailPage() {
+  const params = new URLSearchParams(window.location.search);
+  const id = parseInt(params.get('id'));
+  if (!id) return;
+
+  fetch(`/api/contests/${id}`)
+    .then(r => r.json())
+    .then(contest => {
+      if (contest.success === false) return;
+      document.title = `${contest.name} - CodeArena`;
+      document.getElementById('contest-title').textContent = contest.name;
+      document.getElementById('contest-time').textContent = `Starts: ${formatDate(contest.start)} · Duration: ${contest.duration}`;
+      
+      if (contest.status === 'upcoming') {
+        document.getElementById('contest-countdown').textContent = `Starts in ${getCountdown(contest.start)}`;
+      } else if (contest.status === 'ongoing') {
+        document.getElementById('contest-countdown').textContent = `Live Now`;
+      } else {
+        document.getElementById('contest-countdown').textContent = `Ended`;
+      }
+      
+      document.getElementById('contest-participants').textContent = `${contest.participants.toLocaleString()} participants`;
+
+      const actionsEl = document.getElementById('contest-actions');
+      if (contest.status === 'upcoming') {
+        if (contest.registered) {
+          actionsEl.innerHTML = `<button class="btn btn-success" disabled style="opacity:0.8;cursor:default">Registered ✓</button>`;
+        } else {
+          actionsEl.innerHTML = `<button class="btn btn-primary" onclick="registerContest(${contest.id})">Register</button>`;
+        }
+      } else if (contest.status === 'ongoing') {
+        actionsEl.innerHTML = `<button class="btn btn-success">Enter Contest</button>`;
+      }
+
+      const tbody = document.getElementById('contest-problems-tbody');
+      if (contest.problem_list) {
+        tbody.innerHTML = contest.problem_list.map(p => `
+          <tr>
+            <td>${getStatusIcon(p.status)}</td>
+            <td><a href="problem.html?id=${p.id}" class="problem-title-link">${p.id}. ${p.title}</a></td>
+            <td><span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span></td>
+            <td class="acceptance">${p.acceptance}%</td>
+          </tr>`).join('');
+      }
+    })
+    .catch(err => console.error(err));
+}
 
 // ===== DASHBOARD =====
 function initDashboard() {
@@ -621,6 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (page === 'leaderboard.html') initLeaderboard();
   if (page === 'submissions.html') initSubmissionsPage();
   if (page === 'contests.html') initContestsPage();
+  if (page === 'contest.html') initContestDetailPage();
   if (page === 'dashboard.html') initDashboard();
   if (page === 'login.html') initLoginForm();
   if (page === 'signup.html') initSignupForm();

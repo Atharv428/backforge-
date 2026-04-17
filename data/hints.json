@@ -1,0 +1,8 @@
+[
+  "Think about what data structure allows O(1) lookups. A hash map might be your best friend here.",
+  "Consider the sliding window technique — it can reduce O(n²) to O(n) for substring problems.",
+  "Dynamic programming often helps when you see overlapping subproblems. Try defining dp[i] as the answer for the first i elements.",
+  "Binary search works on any monotonic function, not just sorted arrays. Can you define a condition that's monotonic?",
+  "For tree problems, think recursively: what does the function return for a leaf node? Build up from there.",
+  "Greedy works when a locally optimal choice leads to a globally optimal solution. Can you prove that here?"
+]

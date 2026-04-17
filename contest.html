@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contest Details — CodeArena</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="container" style="max-width: 1000px; padding: 2rem;">
+    <!-- Contest Hero -->
+    <div style="background: var(--surface); padding: 2.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid var(--border);">
+      <div style="display:flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 class="page-title" id="contest-title" style="margin-bottom: 0.5rem">Loading Contest...</h1>
+          <p class="page-subtitle" id="contest-time" style="margin-bottom: 1rem"></p>
+          <div style="display: flex; gap: 1rem; align-items: center">
+             <span id="contest-countdown" style="color: var(--accent); font-weight: 600;"></span>
+             <span id="contest-participants" style="color: var(--text-muted); font-size: 0.9rem"></span>
+          </div>
+        </div>
+        <div id="contest-actions">
+          <!-- Register button goes here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Problems List -->
+    <div class="section-header" style="margin-bottom:1rem">
+      <h2>Contest Problems</h2>
+    </div>
+    <div class="table-container">
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th style="width: 5%">Status</th>
+            <th>Title</th>
+            <th style="width: 15%">Difficulty</th>
+            <th style="width: 15%">Acceptance</th>
+          </tr>
+        </thead>
+        <tbody id="contest-problems-tbody">
+           <!-- Loaded dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+  <script src="js/script.js"></script>
+</body>
+</html>

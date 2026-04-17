@@ -1,0 +1,12 @@
+[
+  { "rank": 1, "username": "tourneysolver", "name": "Alex Chen", "solved": 847, "points": 12450, "rating": 2891, "avatar": "AC", "color": "#58a6ff" },
+  { "rank": 2, "username": "codemaster99", "name": "Priya Sharma", "solved": 812, "points": 11980, "rating": 2754, "avatar": "PS", "color": "#bc8cff" },
+  { "rank": 3, "username": "algo_wizard", "name": "Marcus Lee", "solved": 798, "points": 11200, "rating": 2701, "avatar": "ML", "color": "#3fb950" },
+  { "rank": 4, "username": "devninja42", "name": "Sara Kim", "solved": 765, "points": 10850, "rating": 2634, "avatar": "SK", "color": "#e3b341" },
+  { "rank": 5, "username": "bytecruncher", "name": "James Wu", "solved": 741, "points": 10200, "rating": 2589, "avatar": "JW", "color": "#f85149" },
+  { "rank": 6, "username": "recursion_fan", "name": "Lena Patel", "solved": 720, "points": 9870, "rating": 2512, "avatar": "LP", "color": "#58a6ff" },
+  { "rank": 7, "username": "stackoverflower", "name": "Tom Nguyen", "solved": 698, "points": 9450, "rating": 2478, "avatar": "TN", "color": "#bc8cff" },
+  { "rank": 8, "username": "dp_queen", "name": "Aisha Johnson", "solved": 675, "points": 9100, "rating": 2401, "avatar": "AJ", "color": "#3fb950" },
+  { "rank": 9, "username": "greedy_gopher", "name": "Ryan Park", "solved": 654, "points": 8750, "rating": 2356, "avatar": "RP", "color": "#e3b341" },
+  { "rank": 10, "username": "binarysearch_pro", "name": "Mei Zhang", "solved": 631, "points": 8400, "rating": 2289, "avatar": "MZ", "color": "#f85149" }
+]
