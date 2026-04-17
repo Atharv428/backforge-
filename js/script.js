@@ -504,8 +504,8 @@ function renderContests(contests) {
         </div>
         ${c.status === 'upcoming' ? `<div class="countdown-text" id="cd-${c.id}">Starts in ${getCountdown(c.start)}</div>` : ''}
         <div style="margin-top:1rem;display:flex;gap:0.6rem">
-          ${c.status === 'upcoming' ? (c.registered ? `<button class="btn btn-success btn-sm" style="opacity:0.8;cursor:default" disabled>Registered</button>` : `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>`) : ''}
-          ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id})">Enter Contest</button>` : ''}
+          ${c.status === 'upcoming' ? (c.registered ? `<button class="btn btn-success btn-sm" style="opacity:0.8;cursor:default" disabled>Registered</button>` : `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id}, '${c.name}')">Register</button>`) : ''}
+          ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id}, '${c.name}')">Enter Contest</button>` : ''}
           ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm" onclick="window.location.href='contest.html?id=${c.id}'">View Results</button>` : ''}
           <button class="btn btn-ghost btn-sm" onclick="window.location.href='contest.html?id=${c.id}'">Details</button>
         </div>
@@ -520,13 +520,21 @@ function renderContests(contests) {
   }, 60000);
 }
 
-window.registerContest = (id) => {
+window.registerContest = (id, name) => {
   fetch(`/api/contests/${id}/register`, { method: 'POST' })
     .then(r => r.json())
     .then(res => {
       if (res.success) {
-        alert('Successfully registered!');
-        initContestsPage(); // Refresh to show updated participants count
+        alert('Successfully registered! Redirecting to LeetCode...');
+        if (window.location.pathname.endsWith('contests.html')) {
+          initContestsPage();
+        } else if (window.location.pathname.endsWith('contest.html')) {
+          initContestDetailPage();
+        }
+        if (name) {
+          const slug = name.toLowerCase().replace(/ /g, '-');
+          window.open(`https://leetcode.com/contest/${slug}/`, '_blank');
+        }
       } else {
         alert(res.message || 'Failed to register');
       }
@@ -534,8 +542,13 @@ window.registerContest = (id) => {
     .catch(err => alert('Error registering: ' + err));
 };
 
-window.enterContest = (id) => {
-  window.location.href = `contest.html?id=${id}`;
+window.enterContest = (id, name) => {
+  if (name) {
+    const slug = name.toLowerCase().replace(/ /g, '-');
+    window.open(`https://leetcode.com/contest/${slug}/`, '_blank');
+  } else {
+    window.location.href = `contest.html?id=${id}`;
+  }
 };
 
 // ===== CONTEST DETAIL PAGE =====
@@ -567,10 +580,10 @@ function initContestDetailPage() {
         if (contest.registered) {
           actionsEl.innerHTML = `<button class="btn btn-success" disabled style="opacity:0.8;cursor:default">Registered ✓</button>`;
         } else {
-          actionsEl.innerHTML = `<button class="btn btn-primary" onclick="registerContest(${contest.id})">Register</button>`;
+          actionsEl.innerHTML = `<button class="btn btn-primary" onclick="registerContest(${contest.id}, '${contest.name}')">Register</button>`;
         }
       } else if (contest.status === 'ongoing') {
-        actionsEl.innerHTML = `<button class="btn btn-success">Enter Contest</button>`;
+        actionsEl.innerHTML = `<button class="btn btn-success" onclick="enterContest(${contest.id}, '${contest.name}')">Enter Contest</button>`;
       }
 
       const tbody = document.getElementById('contest-problems-tbody');

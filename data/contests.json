@@ -21,7 +21,7 @@
     "status": "upcoming",
     "start": "2026-04-07T14:00:00",
     "duration": "1h 30m",
-    "participants": 0,
+    "participants": 1,
     "problems": 4,
     "problemIds": [
       5,
@@ -29,7 +29,7 @@
       7,
       8
     ],
-    "registered": false
+    "registered": true
   },
   {
     "id": 3,
@@ -37,7 +37,7 @@
     "status": "upcoming",
     "start": "2026-04-12T09:00:00",
     "duration": "3h 00m",
-    "participants": 0,
+    "participants": 1,
     "problems": 6,
     "problemIds": [
       1,
@@ -47,7 +47,7 @@
       6,
       7
     ],
-    "registered": false
+    "registered": true
   },
   {
     "id": 4,
