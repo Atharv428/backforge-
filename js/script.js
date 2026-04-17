@@ -450,7 +450,7 @@ function initCodeActions() {
       const code = document.getElementById('code-editor').value;
 
       try {
-        const response = await fetch('http://localhost:5000/api/submit-code', {
+        const response = await fetch('/api/submit-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -513,7 +513,7 @@ async function initLeaderboard() {
   
   let usersData = DUMMY_USERS;
   try {
-    const response = await fetch('http://localhost:5000/api/leaderboard');
+    const response = await fetch('/api/leaderboard');
     if (response.ok) {
       const realUsers = await response.json();
       if (realUsers.length > 0) {
@@ -558,7 +558,7 @@ async function initSubmissionsPage() {
   
   let subs = DUMMY_SUBMISSIONS;
   try {
-    const res = await fetch('http://localhost:5000/api/submissions');
+    const res = await fetch('/api/submissions');
     if (res.ok) {
       const realSubs = await res.json();
       if (realSubs.length > 0) subs = realSubs;
@@ -699,7 +699,7 @@ function initLoginForm() {
       showFormMessage('login-msg', 'Logging in...', 'accent');
       
       try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -729,7 +729,7 @@ function initLoginForm() {
       showFormMessage('login-msg', `Simulating ${provider} login...`, 'accent');
       
       try {
-        const response = await fetch('http://localhost:5000/api/auth/mock-oauth', {
+        const response = await fetch('/api/auth/mock-oauth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ provider })
@@ -801,7 +801,7 @@ function initSignupForm() {
       showFormMessage('signup-msg', 'Creating account...', 'accent');
       
       try {
-        const response = await fetch('http://localhost:5000/api/auth/signup', {
+        const response = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password })
@@ -831,7 +831,7 @@ function initSignupForm() {
       showFormMessage('signup-msg', `Simulating ${provider} signup...`, 'accent');
       
       try {
-        const response = await fetch('http://localhost:5000/api/auth/mock-oauth', {
+        const response = await fetch('/api/auth/mock-oauth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ provider })

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: codearena-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: Database credentials should be set in the Render dashboard, NOT in this file!
+      - key: DATABASE_URL
+        sync: false
