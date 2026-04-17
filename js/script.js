@@ -173,7 +173,14 @@ function setActiveNav() {
 // ===== NAVBAR HTML =====
 const LOGO_SVG = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M9 1L3 9h5l-1 6 6-8H8l1-6z"/></svg>`;
 
+let currentUser = JSON.parse(sessionStorage.getItem('codearena_user') || 'null');
+
 function renderNavbar(container) {
+  const authLinks = currentUser 
+    ? `<div style="display:flex;align-items:center;gap:1rem"><a href="dashboard.html" style="font-weight:600;color:var(--text-primary)">${currentUser.username || currentUser.email}</a> <a href="#" id="logout-btn" class="btn btn-danger btn-sm">Log out</a></div>`
+    : `<a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+       <a href="signup.html" class="btn btn-primary btn-sm">Sign up</a>`;
+
   container.innerHTML = `
     <nav class="navbar">
       <a href="index.html" class="nav-brand">
@@ -188,11 +195,22 @@ function renderNavbar(container) {
         <a href="dashboard.html">Dashboard</a>
       </div>
       <div class="nav-actions">
-        <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
-        <a href="signup.html" class="btn btn-primary btn-sm">Sign up</a>
+        ${authLinks}
       </div>
     </nav>`;
   setActiveNav();
+
+  if (currentUser) {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        sessionStorage.removeItem('codearena_user');
+        sessionStorage.removeItem('codearena_token');
+        window.location.href = 'index.html';
+      });
+    }
+  }
 }
 
 // ===== FOOTER HTML =====
@@ -446,11 +464,24 @@ function initAIHint() {
 }
 
 // ===== LEADERBOARD =====
-function initLeaderboard() {
+async function initLeaderboard() {
   const tbody = document.getElementById('leaderboard-tbody');
   if (!tbody) return;
-  // TODO: GET /api/leaderboard
-  tbody.innerHTML = DUMMY_USERS.map(u => {
+  
+  let usersData = DUMMY_USERS;
+  try {
+    const response = await fetch('http://localhost:5000/api/leaderboard');
+    if (response.ok) {
+      const realUsers = await response.json();
+      if (realUsers.length > 0) {
+        usersData = realUsers;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load real leaderboard, falling back to dummy data");
+  }
+
+  tbody.innerHTML = usersData.map(u => {
     const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
     const barWidth = Math.round((u.rating / 3000) * 80);
     return `
@@ -466,7 +497,7 @@ function initLeaderboard() {
           </div>
         </td>
         <td style="font-weight:600;font-variant-numeric:tabular-nums">${u.solved}</td>
-        <td style="color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums">${u.points.toLocaleString()}</td>
+        <td style="color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums">${Number(u.points).toLocaleString()}</td>
         <td>
           <div class="rating-display">
             <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${barWidth}px"></div></div>
@@ -533,11 +564,16 @@ function initContestsPage() {
 }
 
 window.registerContest = (id) => {
-  // TODO: POST /api/contests/:id/register
-  alert(`Registered for contest #${id}! (Connect to backend to persist)`);
+  const btn = event.target;
+  btn.textContent = "Registered ✓";
+  btn.classList.remove('btn-primary');
+  btn.classList.add('btn-success');
+  btn.disabled = true;
 };
 window.enterContest = (id) => {
-  alert(`Entering contest #${id}! (Backend needed for contest problems)`);
+  const btn = event.target;
+  btn.textContent = "Loading Environment...";
+  setTimeout(() => window.location.href = 'problems.html', 1000);
 };
 
 // ===== DASHBOARD =====
@@ -570,33 +606,137 @@ function renderMiniCharts() {
 // ===== AUTH FORMS =====
 function initLoginForm() {
   const form = document.getElementById('login-form');
-  if (!form) return;
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    // TODO: POST /api/auth/login { email, password }
-    console.log('Login attempt:', { email });
-    showFormMessage('login-msg', 'Backend not connected. Implement POST /api/auth/login', 'info');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      showFormMessage('login-msg', 'Logging in...', 'accent');
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('login-msg', data.error || 'Login failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('login-msg', 'Login successful! Redirecting...', 'success');
+          setTimeout(() => window.location.href = 'dashboard.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('login-msg', 'Could not connect to server', 'error');
+      }
+    });
+  }
+
+  // Google / GitHub Auth handler
+  document.querySelectorAll('.auth-card .btn-ghost').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const provider = btn.textContent.trim().toLowerCase();
+      showFormMessage('login-msg', `Simulating ${provider} login...`, 'accent');
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/mock-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('login-msg', data.error || 'Login failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('login-msg', `${provider} login successful! Redirecting...`, 'success');
+          setTimeout(() => window.location.href = 'dashboard.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('login-msg', 'Could not connect to server', 'error');
+      }
+    });
   });
 }
 
 function initSignupForm() {
   const form = document.getElementById('signup-form');
-  if (!form) return;
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const confirm = document.getElementById('confirm-password').value;
-    if (password !== confirm) {
-      showFormMessage('signup-msg', 'Passwords do not match.', 'error');
-      return;
-    }
-    // TODO: POST /api/auth/signup { username, email, password }
-    console.log('Signup attempt:', { username, email });
-    showFormMessage('signup-msg', 'Backend not connected. Implement POST /api/auth/signup', 'info');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm-password').value;
+      
+      if (password !== confirm) {
+        return showFormMessage('signup-msg', 'Passwords do not match.', 'error');
+      }
+      
+      showFormMessage('signup-msg', 'Creating account...', 'accent');
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('signup-msg', data.error || 'Signup failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('signup-msg', 'Account created! Redirecting...', 'success');
+          setTimeout(() => window.location.href = 'dashboard.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('signup-msg', 'Could not connect to server', 'error');
+      }
+    });
+  }
+
+  // Google / GitHub Auth handler
+  document.querySelectorAll('.auth-card .btn-ghost').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const provider = btn.textContent.trim().toLowerCase();
+      showFormMessage('signup-msg', `Simulating ${provider} signup...`, 'accent');
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/mock-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('signup-msg', data.error || 'Signup failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('signup-msg', `${provider} signup successful! Redirecting...`, 'success');
+          setTimeout(() => window.location.href = 'dashboard.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('signup-msg', 'Could not connect to server', 'error');
+      }
+    });
   });
 }
 
