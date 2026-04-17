@@ -607,6 +607,26 @@ function renderMiniCharts() {
 function initLoginForm() {
   const form = document.getElementById('login-form');
   if (form) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Initial state
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+
+    // Real-time validation
+    form.addEventListener('input', () => {
+      if (form.checkValidity()) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+      }
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -672,6 +692,37 @@ function initLoginForm() {
 function initSignupForm() {
   const form = document.getElementById('signup-form');
   if (form) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Initial state
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+
+    // Real-time validation
+    form.addEventListener('input', () => {
+      const pw = document.getElementById('password').value;
+      const cpw = document.getElementById('confirm-password').value;
+      
+      if (form.checkValidity() && pw === cpw) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        document.getElementById('signup-msg').style.display = 'none';
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+        
+        // Show subtle error if passwords don't match
+        if (pw && cpw && pw !== cpw) {
+           showFormMessage('signup-msg', 'Passwords do not match', 'error');
+        } else {
+           document.getElementById('signup-msg').style.display = 'none';
+        }
+      }
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
