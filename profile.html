@@ -13,11 +13,11 @@
     <div class="profile-banner"></div>
     <div class="profile-info-card">
       <div class="profile-avatar-wrap">
-        <div class="profile-avatar-xl">AC</div>
+        <div class="profile-avatar-xl" id="profile-avatar">AC</div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem">
         <div>
-          <h1 style="font-size:1.25rem;font-weight:800;letter-spacing:-0.03em">tourneysolver</h1>
+          <h1 id="profile-name" style="font-size:1.25rem;font-weight:800;letter-spacing:-0.03em">tourneysolver</h1>
           <p style="color:var(--text-muted);font-size:0.82rem;margin-top:2px">Alex Chen</p>
           <p style="color:var(--text-secondary);font-size:0.875rem;margin-top:0.6rem;max-width:420px;line-height:1.7">
             Competitive programmer and software engineer. Love solving hard algorithmic problems. Top 10 globally on CodeArena.
@@ -29,8 +29,8 @@
           </div>
         </div>
         <div style="display:flex;gap:0.6rem;padding-top:0.5rem">
-          <button class="btn btn-ghost btn-sm">Edit Profile</button>
-          <button class="btn btn-primary btn-sm">Follow</button>
+          <button id="edit-profile-btn" class="btn btn-ghost btn-sm">Edit Profile</button>
+          <button id="follow-profile-btn" class="btn btn-primary btn-sm">Follow</button>
         </div>
       </div>
     </div>
@@ -139,6 +139,23 @@
   <script src="js/script.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Dynamic User Logic
+      const sessionUser = JSON.parse(sessionStorage.getItem('codearena_user'));
+      if (sessionUser) {
+        document.getElementById('profile-name').textContent = sessionUser.username || 'Coder';
+        document.getElementById('profile-avatar').textContent = (sessionUser.username || 'U')[0].toUpperCase();
+      }
+
+      // Button Logic
+      const editBtn = document.getElementById('edit-profile-btn');
+      const followBtn = document.getElementById('follow-profile-btn');
+      if (editBtn) editBtn.onclick = () => alert('Edit Profile functionality coming soon!');
+      if (followBtn) followBtn.onclick = () => {
+        followBtn.textContent = 'Following ✓';
+        followBtn.classList.remove('btn-primary');
+        followBtn.classList.add('btn-success');
+      };
+
       const hm = document.getElementById('profile-heatmap');
       if (hm) {
         let html = '';

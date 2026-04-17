@@ -227,6 +227,29 @@ app.get('/api/submissions', async (req, res) => {
   }
 });
 
+// API Endpoint: Run Code (Simulation)
+app.post('/api/run-code', async (req, res) => {
+  const { code, language } = req.body;
+  setTimeout(() => {
+    // Generate a simulated output based on random chance
+    const success = Math.random() > 0.2;
+    res.status(200).json({
+      status: success ? 'Finished' : 'Runtime Error',
+      stdout: success ? '✓ Test case 1 passed\n✓ Test case 2 passed\n' : 'Exception in thread "main" java.lang.NullPointerException\n',
+      runtime: Math.floor(Math.random() * 100) + ' ms',
+      memory: (Math.random() * 10 + 10).toFixed(1) + ' MB'
+    });
+  }, 800); // Simulate processing time
+});
+
+// API Endpoint: User Stats (Dashboard)
+app.get('/api/user/stats', async (req, res) => {
+  res.status(200).json({
+    activity: Array.from({length: 364}, () => Math.random() > 0.6 ? Math.floor(Math.random() * 4) + 1 : 0),
+    miniCharts: Array.from({length: 12}, () => Math.floor(Math.random() * 100))
+  });
+});
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

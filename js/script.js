@@ -377,15 +377,28 @@ function initCodeActions() {
   const output = document.getElementById('console-output');
 
   if (runBtn) {
-    runBtn.addEventListener('click', () => {
-      // TODO: POST /api/run-code
+    runBtn.addEventListener('click', async () => {
       output.innerHTML = '<span class="out-info">Running test cases...</span>';
-      setTimeout(() => {
+      try {
+        const response = await fetch('/api/run-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: document.getElementById('code-editor').value,
+            language: document.getElementById('lang-select').value
+          })
+        });
+        const data = await response.json();
+        let cls = data.status === 'Finished' ? 'out-success' : 'out-info';
+        if (data.status === 'Runtime Error') cls = 'out-info'; // fallback color mapping
+        
         output.innerHTML = `
-          <span class="out-success">✓ Test case 1 passed</span><br>
-          <span class="out-success">✓ Test case 2 passed</span><br>
-          <span class="out-info">Runtime: 52ms · Memory: 14.2 MB</span>`;
-      }, 800);
+          <span class="${cls}">${data.status}</span><br>
+          <span style="white-space:pre-wrap;font-family:monospace;opacity:0.9">${data.stdout}</span>
+          <br><span class="out-info">Runtime: ${data.runtime} · Memory: ${data.memory}</span>`;
+      } catch (err) {
+        output.innerHTML = '<span class="out-info" style="color:var(--red)">Failed to connect to backend runner</span>';
+      }
     });
   }
 
@@ -665,10 +678,30 @@ function initContestDetailPage() {
 }
 
 // ===== DASHBOARD =====
-function initDashboard() {
-  // TODO: GET /api/user/stats
-  renderHeatmap();
-  renderMiniCharts();
+async function initDashboard() {
+  try {
+    const response = await fetch('/api/user/stats');
+    const data = await response.json();
+    
+    // Draw Heatmap
+    const hm = document.getElementById('heatmap');
+    if (hm && data.activity) {
+      hm.innerHTML = data.activity.map(val => {
+        const lvl = val === 4 ? 'l4' : val === 3 ? 'l3' : val === 2 ? 'l2' : val === 1 ? 'l1' : '';
+        return `<div class="heatmap-cell ${lvl}"></div>`;
+      }).join('');
+    }
+
+    // Draw Mini Charts
+    const mc = document.getElementById('mini-chart');
+    if (mc && data.miniCharts) {
+      mc.innerHTML = data.miniCharts.map(v => `<div class="bar" style="height:${v}%"></div>`).join('');
+    }
+  } catch (err) {
+    // Fallback if API fails
+    renderHeatmap();
+    renderMiniCharts();
+  }
 }
 
 function renderHeatmap() {
