@@ -148,6 +148,31 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
+// API Endpoint: User Profile
+app.get('/api/user/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const result = await pool.query(
+      'SELECT id, username, email, name, solved, points, rating, avatar, color FROM users WHERE username = $1',
+      [username]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    // Calculate global rank
+    const user = result.rows[0];
+    const rankResult = await pool.query(
+      'SELECT COUNT(*) + 1 AS rank FROM users WHERE points > $1 OR (points = $1 AND rating > $2)',
+      [user.points, user.rating]
+    );
+    
+    user.rank = parseInt(rankResult.rows[0].rank);
+    res.status(200).json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

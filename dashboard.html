@@ -138,7 +138,56 @@
   <div id="footer"></div>
   <script src="js/script.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Security check
+      const sessionUser = JSON.parse(sessionStorage.getItem('codearena_user'));
+      if (!sessionUser) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Update basic fields immediately while loading
+      const titleLink = document.querySelector('.page-subtitle a');
+      const pName = document.querySelector('.p-name');
+      const pHandle = document.querySelector('.p-handle');
+      const avatarLg = document.querySelector('.profile-avatar-lg');
+      
+      if (titleLink) titleLink.textContent = sessionUser.username;
+      if (pName) pName.textContent = sessionUser.username;
+      
+      try {
+        // Fetch real data from backend
+        const res = await fetch(`http://localhost:5000/api/user/${sessionUser.username}`);
+        if (res.ok) {
+          const user = await res.json();
+          
+          // Update DOM Elements
+          document.querySelectorAll('.sc-num')[0].textContent = user.solved || 0; // Problems Solved
+          document.querySelectorAll('.sc-num')[2].textContent = (user.rating || 1200).toLocaleString(); // Rating
+          
+          if (avatarLg) {
+            avatarLg.textContent = user.avatar || user.username.substring(0,2).toUpperCase();
+            avatarLg.style.color = user.color || '#58a6ff';
+            avatarLg.style.background = (user.color || '#58a6ff') + '18';
+          }
+          
+          if (pName) pName.textContent = user.username;
+          if (pHandle) pHandle.textContent = `${user.name || 'Hacker'} · Rank #${user.rank || 'N/A'}`;
+          
+          const rNum = document.querySelector('.r-num');
+          if (rNum) rNum.textContent = user.solved || 0;
+          
+          const circle = document.querySelectorAll('circle')[1];
+          if (circle) {
+             const offset = 289 - ((user.solved || 0) / 2048) * 289;
+             circle.style.strokeDashoffset = offset;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load user data from backend", err);
+      }
+
+      // Load static charts
       const topics = [
         { name: "Arrays", solved: 45, total: 120, color: "var(--accent)" },
         { name: "Dynamic Programming", solved: 28, total: 95, color: "var(--purple)" },
