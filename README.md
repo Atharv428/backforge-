@@ -1,390 +1,108 @@
-# 💻 Coding Platform – EdTech Website-2
+<div align="center">
+  <img src="https://img.icons8.com/nolan/96/code.png" alt="Logo" width="80" height="80">
 
-## 📌 Introduction
+  # 🚀 CodeArena – The Ultimate Coding Platform
+  
+  **Empowering developers to code, compete, and conquer.** <br>
+  A high-performance, full-stack platform inspired by LeetCode and HackerRank, built explicitly for scale, speed, and competitive programming! 
 
-The **Coding Platform** is a web-based application inspired by platforms like **LeetCode** and **HackerRank**, designed to help users practice programming, improve problem-solving skills, and prepare for technical interviews.
+  [![Vercel Deployment](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel&logoColor=white)](https://backforge-tau.vercel.app/)
+  [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?logo=postgresql&logoColor=white)](#)
+  [![Node.js](https://img.shields.io/badge/Backend-Node.js-339933?logo=nodedotjs&logoColor=white)](#)
 
-It provides a structured and interactive environment where users can:
-
-* Solve coding problems across multiple difficulty levels
-* Write and execute code in an integrated editor
-* Submit solutions and receive feedback
-* Track progress and performance
-* Compete via leaderboards and contests
-* Get AI-powered hints for better learning
-
----
-
-## 🚀 System Overview
-
-This is a **full-stack coding platform** designed for:
-
-* Coding practice
-* Code execution and submission
-* Performance tracking
-* Competitive programming (contests)
-* Ranking systems
-
-### 🔹 Development Stages
-
-| Stage   | Description                 |
-| ------- | --------------------------- |
-| Static  | UI only                     |
-| Hybrid  | Partial API integration     |
-| Dynamic | Fully backend-driven system |
+  [**View Live Demo**](https://backforge-tau.vercel.app/) • [**Report Bug**](#) • [**Request Feature**](#)
+</div>
 
 ---
 
-## 🧩 Functional Modules
+## 🌟 Overview
 
-1. Authentication
-2. Problem Management
-3. Code Execution
-4. Submissions
-5. Leaderboard
-6. Contests
-7. Dashboard & Profile
+**CodeArena (BackForge)** is a comprehensive, production-ready coding environment. Unlike static templates, this project operates on a completely functional **Express.js Serverless API** wired up to **Vercel Postgres**, allowing real-world data persistence, user authentication, and dynamic leaderboards.
 
-Each module evolves through:
-**UI → API → Database → Persistent System**
+Whether you're prepping for FAANG interviews or hosting a local coding contest, CodeArena provides a fast, responsive, and gorgeous UI to test your logic.
+
+---
+
+## 🏆 Standout Feature: Dynamic Badge & Goodies System!
+
+We believe in rewarding skill. CodeArena operates an **automated tiering engine** embedded inside its leaderboard to gamify the user experience:
+
+- 🏅 **Badge System:** User ratings dictate their global classification.
+  - `< 1200 Rating` ➡️ **Beginner** (Gray)
+  - `> 1200 Rating` ➡️ **Knight** (Blue)
+  - `> 1600 Rating` ➡️ **Master** (Orange)
+  - `> 2100 Rating` ➡️ **Grandmaster** (Red)
+
+- 🎁 **Ranking Goodies:** Physical and digital rewards are algorithmically allocated to the absolute best coders!
+  - **Rank 1**: 💻👕 (MacBook + T-Shirt)
+  - **Rank 2 & 3**: ⌨️🏷️ (Mechanical Keyboard + Stickers)
+  - **Rank 4 to 10**: 👕 (Exclusive T-Shirt)
+
+---
+
+## 🔥 Core Features
+
+* 🔐 **Secure Authentication**: JWT-based authentication with bcrypt-hashed passwords. Fallback safety mechanisms included for seamless Mock OAuth.
+* 👨‍💻 **Live Code Editor**: Real-time coding interface spanning multiple languages (Python, JavaScript, C++, Java).
+* 📈 **Global Leaderboards**: Real-time algorithmic sorting based on points solved and user ELO rating.
+* ⚡ **Serverless Ready**: Backend explicitly restructured and optimized to run blazingly fast on Vercel Edge Networks.
+* 🗄️ **PostgreSQL Integration**: Complete schema migration directly inside the backend code to ensure tables are always initialized.
 
 ---
 
 ## 🏗️ System Architecture
 
-### 🔹 High-Level Architecture
+CodeArena utilizes a robust **Client-Serverless Architecture**:
 
-```
-Frontend (HTML, CSS, JS)
-        ↓
-API Layer (HTTP Requests)
-        ↓
-Backend (Node.js / Express)
-        ↓
-Database (MongoDB / Firebase)
+```mermaid
+graph LR;
+    A[Sleek Frontend UI] -->|RESTful APIs| B(Vercel Serverless Functions)
+    B -->|Connection Pool| C[(Vercel Postgres DB)]
+    B -->|JWT| D[Auth Module]
 ```
 
-### 🔹 Architecture Style
-
-* Client-Server Architecture
-* RESTful APIs
-* Modular Backend Design
-
-### 🔹 Data Flow
-
-**User Action → API Call → Backend → Database → Response → UI Update**
+### 🧰 Tech Stack
+* **Frontend**: Vanilla HTML5, CSS3, & precise Vanilla JavaScript. (Zero framework bloat for max performance)
+* **Backend**: Node.js & Express API (Refactored for Serverless execution)
+* **Database**: Vercel PostgreSQL (`pg` module)
+* **Hosting**: Vercel (Edge network routing enabled via `vercel.json`)
 
 ---
 
-## 🧱 Architecture Layers
+## 🚀 Quick Start (Local Development)
 
-### 1. Presentation Layer
+Want to run this beast locally? 
 
-Handles UI and user interaction.
-
-**Pages:**
-
-* index.html
-* problems.html
-* problem.html
-* submissions.html
-* leaderboard.html
-* contests.html
-* dashboard.html
-* profile.html
-* login/signup
-
----
-
-### 2. Client Application Layer
-
-Responsibilities:
-
-* Form validation
-* API calls
-* State management
-* Filtering problems
-
-**State Types:**
-
-* Local State
-* Global State
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Atharv428/backforge-.git
+   cd backforge-
+   ```
+2. **Install modules:**
+   ```bash
+   npm install
+   ```
+3. **Configure the Database:**
+   Create a `.env` file in the root directory and add your Postgres URI:
+   ```env
+   DATABASE_URL=postgres://user:password@hostname:5432/dbname
+   JWT_SECRET=super_secret_key_123
+   ```
+4. **Start the engine:**
+   ```bash
+   npm start
+   ```
+   *The server will boot up on `http://localhost:5000`.*
 
 ---
 
-### 3. API Layer
-
-| Method | Purpose     |
-| ------ | ----------- |
-| GET    | Fetch data  |
-| POST   | Create data |
-| PATCH  | Update data |
-| DELETE | Remove data |
-
----
-
-### 4. Backend Layer
-
-Handles:
-
-* Business logic
-* Authentication
-* Code execution
-* Ranking system
-
----
-
-### 5. Data Layer
-
-Stores:
-
-* Users
-* Problems
-* Submissions
-* Contests
-* Leaderboard data
-
----
-
-## 🔐 Authentication Module
-
-### Features
-
-* Login & Signup
-* JWT Authentication
-* Secure Sessions
-
-### Flow
-
-User → `POST /api/auth/login` → Backend verifies → JWT Token → Stored → Used for requests
-
-### Security
-
-* Password hashing
-* Token validation
-* Input validation
-
----
-
-## 📚 Problems Module
-
-### Features
-
-* Browse problems
-* Filter by difficulty
-* View detailed problem statements
-
-### APIs
-
-* `GET /api/problems`
-* `GET /api/problems/:id`
-
----
-
-## ⚙️ Code Execution Module
-
-### Features
-
-* Run code in real-time
-* View outputs and errors
-
-### Flow
-
-User → Write Code → `POST /api/run-code` → Execution → Result
-
----
-
-## 📤 Submission Module
-
-### Features
-
-* Submit solutions
-* Track submission history
-* View verdicts
-
-### APIs
-
-* `POST /api/submit-code`
-* `GET /api/submissions`
-
----
-
-## 🏆 Leaderboard Module
-
-### Features
-
-* Rank users
-* Display scores
-
-### API
-
-* `GET /api/leaderboard`
-
----
-
-## 🎯 Contest Module
-
-### Features
-
-* View contests
-* Register for contests
-
-### APIs
-
-* `GET /api/contests`
-* `POST /api/contests/:id/register`
-
----
-
-## 📊 User Dashboard
-
-### Features
-
-* Track solved problems
-* Performance stats
-* Activity heatmap
-
-### API
-
-* `GET /api/user/stats`
-
----
-
-## 🤖 AI Hint Module
-
-### Features
-
-* AI-generated hints
-* Learning assistance
-
-### API
-
-* `POST /api/ai/hint`
-
----
-
-## 🎨 UI/UX Behavior
-
-| Feature | Static Version | Dynamic Version |
-| ------- | -------------- | --------------- |
-| Loading | Fake           | Real            |
-| Data    | Hardcoded      | API-based       |
-| Errors  | Not handled    | Handled via API |
-
----
-
-## 🔗 Backend Integration Strategy
-
-### Phase 1
-
-* Connect frontend with APIs
-
-### Phase 2
-
-* Implement full CRUD operations
-
-### Phase 3
-
-* Add leaderboard & analytics
-
-### Phase 4
-
-* Real-time features + AI integration
-
----
-
-## 🧰 Tech Stack
-
-### Frontend
-
-* HTML5
-* CSS3
-* JavaScript
-
-### Backend
-
-* Node.js
-* Express.js
-
-### Database
-
-* MongoDB / Firebase
-
----
-
-## 📁 Project Structure
-
-```
-/
-├── index.html
-├── problems.html
-├── problem.html
-├── submissions.html
-├── leaderboard.html
-├── contests.html
-├── dashboard.html
-├── profile.html
-├── login.html
-├── signup.html
-├── style.css
-└── assets/
-```
-
----
-
-## ⚠️ Limitations (Initial Version)
-
-* Static UI in early stages
-* No real-time execution initially
-* Limited backend integration
-* No persistent storage (in static phase)
-
----
-
-## 🔮 Future Enhancements
-
-* Real-time code execution engine
-* Advanced analytics dashboard
-* AI-based recommendations
-* Multi-language support
-* Interview preparation tracks
-* Peer competition & social features
-
----
-
-## 🎯 Key Achievements
-
-* Full API integration readiness
-* Scalable backend architecture
-* Modular system design
-
----
-
-## 🏁 Conclusion
-
-This project transforms a **static frontend UI into a fully functional coding platform**.
-
-### Final Outcome:
-
-* Secure authentication system
-* Code execution engine
-* Submission tracking
-* Leaderboard & contest system
-* AI-powered learning assistance
-
----
-
-## 🤝 Contribution
-
-This project is designed for learning, hackathons, and scalable development.
-Feel free to fork, extend, and enhance it.
-
----
-
-## 📜 License
-
-Open for educational and development purposes.
-
----
-
-💡 *Code. Compete. Improve.*
+## 🎉 Why this wins Hackathons
+
+* **Fully Functional Backend**: It isn't just a UI mockup. The Express logic securely handles registration, user scoring, and ranking metrics.
+* **Flawless Vercel Deployment**: Configured via a meticulous `vercel.json` and a modularized `api/index.js`, breaking free from standard local-only constraints.
+* **Gamification done right**: The "Goodies" and "Badge" feature creates immediate user retention and engagement hooks essential to pitching EdTech products!
+
+<div align="center">
+  <br>
+  <i>Built to Code. Built to Compete. Built to Win.</i>
+</div>
