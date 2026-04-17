@@ -300,14 +300,17 @@ function renderProblemsTable(problems) {
     const page = filtered.slice(start, start + perPage);
     countEl.textContent = `${total} problems`;
 
-    tbody.innerHTML = page.map(p => `
+    tbody.innerHTML = page.map(p => {
+      const lcLinkHtml = p.leetcodeUrl ? ` <a href="${p.leetcodeUrl}" target="_blank" style="color:#ffa116;text-decoration:none;font-size:0.8rem;margin-left:0.5rem" title="Solve on LeetCode">↗ LC</a>` : '';
+      return `
       <tr>
         <td>${getStatusIcon(p.status)}</td>
-        <td><a href="problem.html?id=${p.id}" class="problem-title-link">${p.id}. ${p.title}</a></td>
+        <td><a href="problem.html?id=${p.id}" class="problem-title-link">${p.id}. ${p.title}</a>${lcLinkHtml}</td>
         <td><span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span></td>
         <td>${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</td>
         <td class="acceptance">${p.acceptance}%</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     renderPagination(total, currentPage, perPage);
   }
@@ -352,6 +355,14 @@ function renderProblemDetail(p) {
   document.getElementById('problem-title').textContent = `${p.id}. ${p.title}`;
   document.getElementById('problem-difficulty').innerHTML = `<span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span>`;
   document.getElementById('problem-tags').innerHTML = p.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  
+  const lcLink = document.getElementById('leetcode-link');
+  if (lcLink && p.leetcodeUrl) {
+    lcLink.href = p.leetcodeUrl;
+    lcLink.style.display = 'inline-flex';
+  } else if (lcLink) {
+    lcLink.style.display = 'none';
+  }
 
   // Description
   document.getElementById('problem-description').innerHTML = `<p>${p.description}</p>`;
@@ -569,41 +580,50 @@ async function initSubmissionsPage() {
 
 // ===== CONTESTS PAGE =====
 function initContestsPage() {
-  // TODO: GET /api/contests
-  ['upcoming', 'ongoing', 'past'].forEach(type => {
-    const el = document.getElementById(`${type}-contests`);
-    if (!el) return;
-    const list = DUMMY_CONTESTS.filter(c => c.status === type);
-    el.innerHTML = list.map(c => {
-      const pillClass = { upcoming: 'pill-upcoming', ongoing: 'pill-ongoing', past: 'pill-past' }[c.status];
-      const pillLabel = { upcoming: 'Upcoming', ongoing: 'Live', past: 'Ended' }[c.status];
-      const liveDot = c.status === 'ongoing' ? '<span class="live-dot"></span>' : '';
-      return `
-      <div class="contest-card">
-        <div class="contest-status-pill ${pillClass}">${liveDot}${pillLabel}</div>
-        <div class="contest-name">${c.name}</div>
-        <div class="contest-meta">
-          <span class="contest-meta-item"><span class="contest-meta-icon">Cal</span>${formatDate(c.start)}</span>
-          <span class="contest-meta-item">${c.duration}</span>
-          <span class="contest-meta-item">${c.problems} problems</span>
-          ${c.participants > 0 ? `<span class="contest-meta-item">${c.participants.toLocaleString()} registered</span>` : ''}
-        </div>
-        ${c.status === 'upcoming' ? `<div class="countdown-text" id="cd-${c.id}">Starts in ${getCountdown(c.start)}</div>` : ''}
-        <div style="margin-top:1rem;display:flex;gap:0.6rem">
-          ${c.status === 'upcoming' ? `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>` : ''}
-          ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id})">Enter Contest</button>` : ''}
-          ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm">View Results</button>` : ''}
-          <button class="btn btn-ghost btn-sm">Details</button>
-        </div>
-      </div>`}).join('');
-  });
-
-  setInterval(() => {
-    DUMMY_CONTESTS.filter(c => c.status === 'upcoming').forEach(c => {
-      const el = document.getElementById(`cd-${c.id}`);
-      if (el) el.textContent = `Starts in ${getCountdown(c.start)}`;
+  fetch('data/contests.json')
+    .then(res => res.json())
+    .then(contests => renderContests(contests))
+    .catch(() => {
+       console.warn("Could not load dynamic contests. Using dummy data.");
+       renderContests(DUMMY_CONTESTS);
     });
-  }, 60000);
+    
+  function renderContests(contestsData) {
+    ['upcoming', 'ongoing', 'past'].forEach(type => {
+      const el = document.getElementById(`${type}-contests`);
+      if (!el) return;
+      const list = contestsData.filter(c => c.status === type);
+      el.innerHTML = list.map(c => {
+        const pillClass = { upcoming: 'pill-upcoming', ongoing: 'pill-ongoing', past: 'pill-past' }[c.status];
+        const pillLabel = { upcoming: 'Upcoming', ongoing: 'Live', past: 'Ended' }[c.status];
+        const liveDot = c.status === 'ongoing' ? '<span class="live-dot"></span>' : '';
+        return `
+        <div class="contest-card">
+          <div class="contest-status-pill ${pillClass}">${liveDot}${pillLabel}</div>
+          <div class="contest-name">${c.name}</div>
+          <div class="contest-meta">
+            <span class="contest-meta-item"><span class="contest-meta-icon">Cal</span>${formatDate(c.start)}</span>
+            <span class="contest-meta-item">${c.duration}</span>
+            <span class="contest-meta-item">${c.problems} problems</span>
+            ${c.participants > 0 ? `<span class="contest-meta-item">${c.participants.toLocaleString()} registered</span>` : ''}
+          </div>
+          ${c.status === 'upcoming' ? `<div class="countdown-text" id="cd-${c.id}">Starts in ${getCountdown(c.start)}</div>` : ''}
+          <div style="margin-top:1rem;display:flex;gap:0.6rem">
+            ${c.status === 'upcoming' ? `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>` : ''}
+            ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id})">Enter Contest</button>` : ''}
+            ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm">View Results</button>` : ''}
+            <button class="btn btn-ghost btn-sm">Details</button>
+          </div>
+        </div>`}).join('');
+    });
+
+    setInterval(() => {
+      contestsData.filter(c => c.status === 'upcoming').forEach(c => {
+        const el = document.getElementById(`cd-${c.id}`);
+        if (el) el.textContent = `Starts in ${getCountdown(c.start)}`;
+      });
+    }, 60000);
+  }
 }
 
 window.registerContest = (id) => {
@@ -693,7 +713,7 @@ function initLoginForm() {
           sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
           sessionStorage.setItem('codearena_token', data.token);
           showFormMessage('login-msg', 'Login successful! Redirecting...', 'success');
-          setTimeout(() => window.location.href = 'dashboard.html', 800);
+          setTimeout(() => window.location.href = 'index.html', 800);
         }
       } catch (err) {
         showFormMessage('login-msg', 'Could not connect to server', 'error');
@@ -723,7 +743,7 @@ function initLoginForm() {
           sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
           sessionStorage.setItem('codearena_token', data.token);
           showFormMessage('login-msg', `${provider} login successful! Redirecting...`, 'success');
-          setTimeout(() => window.location.href = 'dashboard.html', 800);
+          setTimeout(() => window.location.href = 'index.html', 800);
         }
       } catch (err) {
         showFormMessage('login-msg', 'Could not connect to server', 'error');
@@ -795,7 +815,7 @@ function initSignupForm() {
           sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
           sessionStorage.setItem('codearena_token', data.token);
           showFormMessage('signup-msg', 'Account created! Redirecting...', 'success');
-          setTimeout(() => window.location.href = 'dashboard.html', 800);
+          setTimeout(() => window.location.href = 'index.html', 800);
         }
       } catch (err) {
         showFormMessage('signup-msg', 'Could not connect to server', 'error');
@@ -825,7 +845,7 @@ function initSignupForm() {
           sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
           sessionStorage.setItem('codearena_token', data.token);
           showFormMessage('signup-msg', `${provider} signup successful! Redirecting...`, 'success');
-          setTimeout(() => window.location.href = 'dashboard.html', 800);
+          setTimeout(() => window.location.href = 'index.html', 800);
         }
       } catch (err) {
         showFormMessage('signup-msg', 'Could not connect to server', 'error');
