@@ -14,8 +14,8 @@ app.use(express.static(__dirname)); // Serve frontend files directly
 
 // Set up PostgreSQL pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Required for Supabase connections
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // Required for Supabase/Neon/Vercel Postgres connections
 });
 
 // Initialize Database Table
@@ -86,7 +86,7 @@ app.post('/api/auth/signup', async (req, res) => {
     );
 
     const newUser = result.rows[0];
-    const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
 
     res.status(201).json({ user: newUser, token });
   } catch (err) {
@@ -110,7 +110,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
 
     res.status(200).json({
       user: { id: user.id, username: user.username, email: user.email },
@@ -139,7 +139,7 @@ app.post('/api/auth/mock-oauth', async (req, res) => {
     );
 
     const newUser = result.rows[0];
-    const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: newUser.id, username: newUser.username }, process.env.JWT_SECRET || 'secret_key', { expiresIn: '1h' });
 
     res.status(200).json({ user: newUser, token });
   } catch (err) {
@@ -227,6 +227,9 @@ app.get('/api/submissions', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+module.exports = app;

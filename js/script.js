@@ -490,6 +490,17 @@ async function initLeaderboard() {
   tbody.innerHTML = usersData.map(u => {
     const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
     const barWidth = Math.round((u.rating / 3000) * 80);
+    
+    let badge = '<span class="badge badge-easy">Beginner</span>';
+    if (u.rating >= 2100) badge = '<span class="badge badge-hard" style="background:#ff333333;color:#ff3333">Grandmaster</span>';
+    else if (u.rating >= 1600) badge = '<span class="badge badge-medium" style="background:#ffa11633;color:#ffa116">Master</span>';
+    else if (u.rating >= 1200) badge = '<span class="badge badge-medium" style="background:#58a6ff33;color:#58a6ff">Knight</span>';
+
+    let goodies = '<span style="color:var(--text-muted)">-</span>';
+    if (u.rank === 1) goodies = '<span title="MacBook + T-Shirt" style="font-size:1.2rem">💻👕</span>';
+    else if (u.rank <= 3) goodies = '<span title="Keyboard + Stickers" style="font-size:1.2rem">⌨️🏷️</span>';
+    else if (u.rank <= 10) goodies = '<span title="T-Shirt" style="font-size:1.2rem">👕</span>';
+
     return `
       <tr>
         <td><span class="${rankClass}">${u.rank}</span></td>
@@ -510,6 +521,8 @@ async function initLeaderboard() {
             <span style="font-weight:700;color:var(--purple);font-variant-numeric:tabular-nums">${u.rating}</span>
           </div>
         </td>
+        <td>${badge}</td>
+        <td>${goodies}</td>
       </tr>`;
   }).join('');
 }
