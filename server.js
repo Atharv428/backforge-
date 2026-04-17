@@ -36,6 +36,23 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS submissions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        username VARCHAR(50),
+        problem_id INTEGER NOT NULL,
+        problem_title VARCHAR(255) NOT NULL,
+        language VARCHAR(50) NOT NULL,
+        status VARCHAR(50) NOT NULL,
+        runtime VARCHAR(50) NOT NULL,
+        memory VARCHAR(50) NOT NULL,
+        code TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Ensure columns exist if table was created previously without them
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255) DEFAULT ''");
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS solved INTEGER DEFAULT 0");
@@ -170,6 +187,43 @@ app.get('/api/user/:username', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// API Endpoint: Submit Code
+app.post('/api/submit-code', async (req, res) => {
+  const { user_id, username, problem_id, problem_title, language, code } = req.body;
+  try {
+    // Simulate backend grading engine
+    const statuses = ['Accepted', 'Accepted', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded'];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const runtime = Math.floor(Math.random() * 100) + ' ms';
+    const memory = (Math.random() * 20 + 10).toFixed(1) + ' MB';
+
+    const result = await pool.query(
+      'INSERT INTO submissions (user_id, username, problem_id, problem_title, language, status, runtime, memory, code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+      [user_id, username, problem_id, problem_title, language, status, runtime, memory, code]
+    );
+
+    // If Accepted, reward user points and increment solved count
+    if (status === 'Accepted' && user_id) {
+       await pool.query('UPDATE users SET solved = solved + 1, points = points + 10 WHERE id = $1', [user_id]);
+    }
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to submit code' });
+  }
+});
+
+// API Endpoint: Get All Submissions
+app.get('/api/submissions', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM submissions ORDER BY created_at DESC LIMIT 50');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch submissions' });
   }
 });
 

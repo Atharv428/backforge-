@@ -422,15 +422,47 @@ function initCodeActions() {
   }
 
   if (submitBtn) {
-    submitBtn.addEventListener('click', () => {
-      // TODO: POST /api/submit-code
-      output.innerHTML = '<span class="out-info">Submitting solution...</span>';
-      setTimeout(() => {
-        output.innerHTML = `
-          <span class="out-success">Accepted</span><br>
-          <span class="out-info">Runtime: 52ms (beats 87.3%) · Memory: 14.2 MB (beats 72.1%)</span><br>
-          <span class="out-info">All 57 test cases passed.</span>`;
-      }, 1200);
+    submitBtn.addEventListener('click', async () => {
+      output.innerHTML = '<span class="out-info">Submitting solution to backend...</span>';
+      
+      const user = JSON.parse(sessionStorage.getItem('codearena_user') || '{}');
+      if (!user.id) {
+        output.innerHTML = '<span class="out-info" style="color:var(--red)">You must be logged in to submit code!</span>';
+        return;
+      }
+      
+      const params = new URLSearchParams(window.location.search);
+      const problemId = params.get('id') || 1;
+      const titleEl = document.getElementById('problem-title');
+      const problemTitle = titleEl ? titleEl.textContent.split('. ')[1] : 'Unknown Problem';
+      const language = document.getElementById('lang-select').value;
+      const code = document.getElementById('code-editor').value;
+
+      try {
+        const response = await fetch('http://localhost:5000/api/submit-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            username: user.username,
+            problem_id: problemId,
+            problem_title: problemTitle,
+            language: language,
+            code: code
+          })
+        });
+        
+        const data = await response.json();
+        
+        let outHtml = `<span class="out-${data.status === 'Accepted' ? 'success' : 'info'}">${data.status}</span><br>`;
+        if(data.status === 'Accepted') {
+          outHtml += `<span class="out-info">Runtime: ${data.runtime} · Memory: ${data.memory}</span><br>`;
+          outHtml += `<span class="out-info" style="color:var(--accent)">Points awarded! Check Leaderboard</span>`;
+        }
+        output.innerHTML = outHtml;
+      } catch (err) {
+        output.innerHTML = '<span class="out-info" style="color:var(--red)">Failed to connect to backend</span>';
+      }
     });
   }
 }
@@ -509,18 +541,29 @@ async function initLeaderboard() {
 }
 
 // ===== SUBMISSIONS PAGE =====
-function initSubmissionsPage() {
+async function initSubmissionsPage() {
   const tbody = document.getElementById('submissions-tbody');
   if (!tbody) return;
-  // TODO: GET /api/submissions
-  tbody.innerHTML = DUMMY_SUBMISSIONS.map(s => `
+  
+  let subs = DUMMY_SUBMISSIONS;
+  try {
+    const res = await fetch('http://localhost:5000/api/submissions');
+    if (res.ok) {
+      const realSubs = await res.json();
+      if (realSubs.length > 0) subs = realSubs;
+    }
+  } catch (err) {
+    console.warn("Could not load real submissions, falling back to dummy data");
+  }
+
+  tbody.innerHTML = subs.map(s => `
     <tr>
-      <td><a href="problem.html?id=${s.problemId}" style="color:var(--accent)">${s.problem}</a></td>
+      <td><a href="problem.html?id=${s.problem_id || s.problemId}" style="color:var(--accent)">${s.problem_title || s.problem}</a></td>
       <td>${getSubmissionBadge(s.status)}</td>
       <td><span class="tag">${s.language}</span></td>
       <td style="color:var(--text-secondary)">${s.runtime}</td>
       <td style="color:var(--text-secondary)">${s.memory}</td>
-      <td style="color:var(--text-muted);font-size:0.8rem">${s.time}</td>
+      <td style="color:var(--text-muted);font-size:0.8rem">${s.created_at ? new Date(s.created_at).toLocaleString() : s.time}</td>
     </tr>`).join('');
 }
 
