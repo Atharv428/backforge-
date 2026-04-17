@@ -1,13 +1,29 @@
 {
-  "name": "edutech-web",
+  "name": "backforge",
   "version": "1.0.0",
-  "description": "Edutech Web App Backend",
-  "main": "server.js",
+  "description": "The **Coding Platform** is a web-based application inspired by platforms like **LeetCode** and **HackerRank**, designed to help users practice programming, improve problem-solving skills, and prepare for technical interviews.",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blazeinferno65/BackForge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/blazeinferno65/BackForge/issues"
+  },
+  "homepage": "https://github.com/blazeinferno65/BackForge#readme",
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
   }
 }

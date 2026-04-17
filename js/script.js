@@ -130,7 +130,14 @@ function setActiveNav() {
 // ===== NAVBAR HTML =====
 const LOGO_SVG = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M9 1L3 9h5l-1 6 6-8H8l1-6z"/></svg>`;
 
+let currentUser = JSON.parse(sessionStorage.getItem('codearena_user') || 'null');
+
 function renderNavbar(container) {
+  const authLinks = currentUser 
+    ? `<div style="display:flex;align-items:center;gap:1rem"><a href="dashboard.html" style="font-weight:600;color:var(--text-primary)">${currentUser.username || currentUser.email}</a> <a href="#" id="logout-btn" class="btn btn-danger btn-sm">Log out</a></div>`
+    : `<a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
+       <a href="signup.html" class="btn btn-primary btn-sm">Sign up</a>`;
+
   container.innerHTML = `
     <nav class="navbar">
       <a href="index.html" class="nav-brand">
@@ -145,11 +152,22 @@ function renderNavbar(container) {
         <a href="dashboard.html">Dashboard</a>
       </div>
       <div class="nav-actions">
-        <a href="login.html" class="btn btn-ghost btn-sm">Log in</a>
-        <a href="signup.html" class="btn btn-primary btn-sm">Sign up</a>
+        ${authLinks}
       </div>
     </nav>`;
   setActiveNav();
+
+  if (currentUser) {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        sessionStorage.removeItem('codearena_user');
+        sessionStorage.removeItem('codearena_token');
+        window.location.href = 'index.html';
+      });
+    }
+  }
 }
 
 // ===== FOOTER HTML =====
@@ -239,14 +257,17 @@ function renderProblemsTable(problems) {
     const page = filtered.slice(start, start + perPage);
     countEl.textContent = `${total} problems`;
 
-    tbody.innerHTML = page.map(p => `
+    tbody.innerHTML = page.map(p => {
+      const lcLinkHtml = p.leetcodeUrl ? ` <a href="${p.leetcodeUrl}" target="_blank" style="color:#ffa116;text-decoration:none;font-size:0.8rem;margin-left:0.5rem" title="Solve on LeetCode">↗ LC</a>` : '';
+      return `
       <tr>
         <td>${getStatusIcon(p.status)}</td>
-        <td><a href="problem.html?id=${p.id}" class="problem-title-link">${p.id}. ${p.title}</a></td>
+        <td><a href="problem.html?id=${p.id}" class="problem-title-link">${p.id}. ${p.title}</a>${lcLinkHtml}</td>
         <td><span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span></td>
         <td>${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</td>
         <td class="acceptance">${p.acceptance}%</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     renderPagination(total, currentPage, perPage);
   }
@@ -291,6 +312,14 @@ function renderProblemDetail(p) {
   document.getElementById('problem-title').textContent = `${p.id}. ${p.title}`;
   document.getElementById('problem-difficulty').innerHTML = `<span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span>`;
   document.getElementById('problem-tags').innerHTML = p.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  
+  const lcLink = document.getElementById('leetcode-link');
+  if (lcLink && p.leetcodeUrl) {
+    lcLink.href = p.leetcodeUrl;
+    lcLink.style.display = 'inline-flex';
+  } else if (lcLink) {
+    lcLink.style.display = 'none';
+  }
 
   // Description
   document.getElementById('problem-description').innerHTML = `<p>${p.description}</p>`;
@@ -361,15 +390,47 @@ function initCodeActions() {
   }
 
   if (submitBtn) {
-    submitBtn.addEventListener('click', () => {
-      // TODO: POST /api/submit-code
-      output.innerHTML = '<span class="out-info">Submitting solution...</span>';
-      setTimeout(() => {
-        output.innerHTML = `
-          <span class="out-success">Accepted</span><br>
-          <span class="out-info">Runtime: 52ms (beats 87.3%) · Memory: 14.2 MB (beats 72.1%)</span><br>
-          <span class="out-info">All 57 test cases passed.</span>`;
-      }, 1200);
+    submitBtn.addEventListener('click', async () => {
+      output.innerHTML = '<span class="out-info">Submitting solution to backend...</span>';
+      
+      const user = JSON.parse(sessionStorage.getItem('codearena_user') || '{}');
+      if (!user.id) {
+        output.innerHTML = '<span class="out-info" style="color:var(--red)">You must be logged in to submit code!</span>';
+        return;
+      }
+      
+      const params = new URLSearchParams(window.location.search);
+      const problemId = params.get('id') || 1;
+      const titleEl = document.getElementById('problem-title');
+      const problemTitle = titleEl ? titleEl.textContent.split('. ')[1] : 'Unknown Problem';
+      const language = document.getElementById('lang-select').value;
+      const code = document.getElementById('code-editor').value;
+
+      try {
+        const response = await fetch('/api/submit-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            username: user.username,
+            problem_id: problemId,
+            problem_title: problemTitle,
+            language: language,
+            code: code
+          })
+        });
+        
+        const data = await response.json();
+        
+        let outHtml = `<span class="out-${data.status === 'Accepted' ? 'success' : 'info'}">${data.status}</span><br>`;
+        if(data.status === 'Accepted') {
+          outHtml += `<span class="out-info">Runtime: ${data.runtime} · Memory: ${data.memory}</span><br>`;
+          outHtml += `<span class="out-info" style="color:var(--accent)">Points awarded! Check Leaderboard</span>`;
+        }
+        output.innerHTML = outHtml;
+      } catch (err) {
+        output.innerHTML = '<span class="out-info" style="color:var(--red)">Failed to connect to backend</span>';
+      }
     });
   }
 }
@@ -409,146 +470,136 @@ function initAIHint() {
 }
 
 // ===== LEADERBOARD =====
-function initLeaderboard() {
+async function initLeaderboard() {
   const tbody = document.getElementById('leaderboard-tbody');
   if (!tbody) return;
-  fetch('/api/leaderboard')
-    .then(r => r.json())
-    .then(users => {
-      tbody.innerHTML = users.map(u => {
-        const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
-        const barWidth = Math.round((u.rating / 3000) * 80);
-        return `
-          <tr>
-            <td><span class="${rankClass}">${u.rank}</span></td>
-            <td>
-              <div class="user-cell">
-                <div class="avatar" style="background:${u.color}18;color:${u.color}">${u.avatar}</div>
-                <div>
-                  <div style="font-weight:600;font-size:0.875rem;letter-spacing:-0.01em">${u.username}</div>
-                  <div style="font-size:0.75rem;color:var(--text-muted)">${u.name}</div>
-                </div>
-              </div>
-            </td>
-            <td style="font-weight:600;font-variant-numeric:tabular-nums">${u.solved}</td>
-            <td style="color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums">${u.points.toLocaleString()}</td>
-            <td>
-              <div class="rating-display">
-                <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${barWidth}px"></div></div>
-                <span style="font-weight:700;color:var(--purple);font-variant-numeric:tabular-nums">${u.rating}</span>
-              </div>
-            </td>
-          </tr>`;
-      }).join('');
-    });
+  
+  let usersData = DUMMY_USERS;
+  try {
+    const response = await fetch('/api/leaderboard');
+    if (response.ok) {
+      const realUsers = await response.json();
+      if (realUsers.length > 0) {
+        usersData = realUsers;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load real leaderboard, falling back to dummy data");
+  }
+
+  tbody.innerHTML = usersData.map(u => {
+    const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
+    const barWidth = Math.round((u.rating / 3000) * 80);
+    return `
+      <tr>
+        <td><span class="${rankClass}">${u.rank}</span></td>
+        <td>
+          <div class="user-cell">
+            <div class="avatar" style="background:${u.color}18;color:${u.color}">${u.avatar}</div>
+            <div>
+              <div style="font-weight:600;font-size:0.875rem;letter-spacing:-0.01em">${u.username}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${u.name}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-weight:600;font-variant-numeric:tabular-nums">${u.solved}</td>
+        <td style="color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums">${Number(u.points).toLocaleString()}</td>
+        <td>
+          <div class="rating-display">
+            <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${barWidth}px"></div></div>
+            <span style="font-weight:700;color:var(--purple);font-variant-numeric:tabular-nums">${u.rating}</span>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
 }
 
 // ===== SUBMISSIONS PAGE =====
-function initSubmissionsPage() {
+async function initSubmissionsPage() {
   const tbody = document.getElementById('submissions-tbody');
   if (!tbody) return;
-  fetch('/api/submissions')
-    .then(r => r.json())
-    .then(submissions => {
-      tbody.innerHTML = submissions.map(s => `
-        <tr>
-          <td><a href="problem.html?id=${s.problemId}" style="color:var(--accent)">${s.problem}</a></td>
-          <td>${getSubmissionBadge(s.status)}</td>
-          <td><span class="tag">${s.language}</span></td>
-          <td style="color:var(--text-secondary)">${s.runtime}</td>
-          <td style="color:var(--text-secondary)">${s.memory}</td>
-          <td style="color:var(--text-muted);font-size:0.8rem">${s.time}</td>
-        </tr>`).join('');
-    });
+  
+  let subs = DUMMY_SUBMISSIONS;
+  try {
+    const res = await fetch('/api/submissions');
+    if (res.ok) {
+      const realSubs = await res.json();
+      if (realSubs.length > 0) subs = realSubs;
+    }
+  } catch (err) {
+    console.warn("Could not load real submissions, falling back to dummy data");
+  }
+
+  tbody.innerHTML = subs.map(s => `
+    <tr>
+      <td><a href="problem.html?id=${s.problem_id || s.problemId}" style="color:var(--accent)">${s.problem_title || s.problem}</a></td>
+      <td>${getSubmissionBadge(s.status)}</td>
+      <td><span class="tag">${s.language}</span></td>
+      <td style="color:var(--text-secondary)">${s.runtime}</td>
+      <td style="color:var(--text-secondary)">${s.memory}</td>
+      <td style="color:var(--text-muted);font-size:0.8rem">${s.created_at ? new Date(s.created_at).toLocaleString() : s.time}</td>
+    </tr>`).join('');
 }
 
 // ===== CONTESTS PAGE =====
 function initContestsPage() {
-  fetch('/api/contests')
-    .then(r => r.json())
+  fetch('data/contests.json')
+    .then(res => res.json())
     .then(contests => renderContests(contests))
-    .catch(err => {
-      console.error('Failed to load contests:', err);
-      // Fallback or display error message
+    .catch(() => {
+       console.warn("Could not load dynamic contests. Using dummy data.");
+       renderContests(DUMMY_CONTESTS);
     });
-}
-
-function renderContests(contests) {
-  ['upcoming', 'ongoing', 'past'].forEach(type => {
-    const el = document.getElementById(`${type}-contests`);
-    if (!el) return;
-    const list = contests.filter(c => c.status === type);
     
-    if (list.length === 0) {
-      if (type === 'ongoing') {
-        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem;padding:1rem 0">No contests running right now.</div>';
-      } else {
-        el.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem;padding:1rem 0">No contests available.</div>';
-      }
-      return;
-    }
-
-    el.innerHTML = list.map(c => {
-      const pillClass = { upcoming: 'pill-upcoming', ongoing: 'pill-ongoing', past: 'pill-past' }[c.status];
-      const pillLabel = { upcoming: 'Upcoming', ongoing: 'Live', past: 'Ended' }[c.status];
-      const liveDot = c.status === 'ongoing' ? '<span class="live-dot"></span>' : '';
-      return `
-      <div class="contest-card">
-        <div class="contest-status-pill ${pillClass}">${liveDot}${pillLabel}</div>
-        <div class="contest-name">${c.name}</div>
-        <div class="contest-meta">
-          <span class="contest-meta-item"><span class="contest-meta-icon">Cal</span>${formatDate(c.start)}</span>
-          <span class="contest-meta-item">${c.duration}</span>
-          <span class="contest-meta-item">${c.problems} problems</span>
-          ${c.participants > 0 ? `<span class="contest-meta-item">${c.participants.toLocaleString()} registered</span>` : ''}
-        </div>
-        ${c.status === 'upcoming' ? `<div class="countdown-text" id="cd-${c.id}">Starts in ${getCountdown(c.start)}</div>` : ''}
-        <div style="margin-top:1rem;display:flex;gap:0.6rem">
-          ${c.status === 'upcoming' ? (c.registered ? `<button class="btn btn-success btn-sm" style="opacity:0.8;cursor:default" disabled>Registered</button>` : `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id}, '${c.name}')">Register</button>`) : ''}
-          ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id}, '${c.name}')">Enter Contest</button>` : ''}
-          ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm" onclick="window.location.href='contest.html?id=${c.id}'">View Results</button>` : ''}
-          <button class="btn btn-ghost btn-sm" onclick="window.location.href='contest.html?id=${c.id}'">Details</button>
-        </div>
-      </div>`}).join('');
-  });
-
-  setInterval(() => {
-    contests.filter(c => c.status === 'upcoming').forEach(c => {
-      const el = document.getElementById(`cd-${c.id}`);
-      if (el) el.textContent = `Starts in ${getCountdown(c.start)}`;
+  function renderContests(contestsData) {
+    ['upcoming', 'ongoing', 'past'].forEach(type => {
+      const el = document.getElementById(`${type}-contests`);
+      if (!el) return;
+      const list = contestsData.filter(c => c.status === type);
+      el.innerHTML = list.map(c => {
+        const pillClass = { upcoming: 'pill-upcoming', ongoing: 'pill-ongoing', past: 'pill-past' }[c.status];
+        const pillLabel = { upcoming: 'Upcoming', ongoing: 'Live', past: 'Ended' }[c.status];
+        const liveDot = c.status === 'ongoing' ? '<span class="live-dot"></span>' : '';
+        return `
+        <div class="contest-card">
+          <div class="contest-status-pill ${pillClass}">${liveDot}${pillLabel}</div>
+          <div class="contest-name">${c.name}</div>
+          <div class="contest-meta">
+            <span class="contest-meta-item"><span class="contest-meta-icon">Cal</span>${formatDate(c.start)}</span>
+            <span class="contest-meta-item">${c.duration}</span>
+            <span class="contest-meta-item">${c.problems} problems</span>
+            ${c.participants > 0 ? `<span class="contest-meta-item">${c.participants.toLocaleString()} registered</span>` : ''}
+          </div>
+          ${c.status === 'upcoming' ? `<div class="countdown-text" id="cd-${c.id}">Starts in ${getCountdown(c.start)}</div>` : ''}
+          <div style="margin-top:1rem;display:flex;gap:0.6rem">
+            ${c.status === 'upcoming' ? `<button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>` : ''}
+            ${c.status === 'ongoing'  ? `<button class="btn btn-success btn-sm" onclick="enterContest(${c.id})">Enter Contest</button>` : ''}
+            ${c.status === 'past'     ? `<button class="btn btn-ghost btn-sm">View Results</button>` : ''}
+            <button class="btn btn-ghost btn-sm">Details</button>
+          </div>
+        </div>`}).join('');
     });
-  }, 60000);
+
+    setInterval(() => {
+      contestsData.filter(c => c.status === 'upcoming').forEach(c => {
+        const el = document.getElementById(`cd-${c.id}`);
+        if (el) el.textContent = `Starts in ${getCountdown(c.start)}`;
+      });
+    }, 60000);
+  }
 }
 
-window.registerContest = (id, name) => {
-  fetch(`/api/contests/${id}/register`, { method: 'POST' })
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        alert('Successfully registered! Redirecting to LeetCode...');
-        if (window.location.pathname.endsWith('contests.html')) {
-          initContestsPage();
-        } else if (window.location.pathname.endsWith('contest.html')) {
-          initContestDetailPage();
-        }
-        if (name) {
-          const slug = name.toLowerCase().replace(/ /g, '-');
-          window.open(`https://leetcode.com/contest/${slug}/`, '_blank');
-        }
-      } else {
-        alert(res.message || 'Failed to register');
-      }
-    })
-    .catch(err => alert('Error registering: ' + err));
+window.registerContest = (id) => {
+  const btn = event.target;
+  btn.textContent = "Registered ✓";
+  btn.classList.remove('btn-primary');
+  btn.classList.add('btn-success');
+  btn.disabled = true;
 };
-
-window.enterContest = (id, name) => {
-  if (name) {
-    const slug = name.toLowerCase().replace(/ /g, '-');
-    window.open(`https://leetcode.com/contest/${slug}/`, '_blank');
-  } else {
-    window.location.href = `contest.html?id=${id}`;
-  }
+window.enterContest = (id) => {
+  const btn = event.target;
+  btn.textContent = "Loading Environment...";
+  setTimeout(() => window.location.href = 'problems.html', 1000);
 };
 
 // ===== CONTEST DETAIL PAGE =====
@@ -630,33 +681,188 @@ function renderMiniCharts() {
 // ===== AUTH FORMS =====
 function initLoginForm() {
   const form = document.getElementById('login-form');
-  if (!form) return;
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    // TODO: POST /api/auth/login { email, password }
-    console.log('Login attempt:', { email });
-    showFormMessage('login-msg', 'Backend not connected. Implement POST /api/auth/login', 'info');
+  if (form) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Initial state
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+
+    // Real-time validation
+    form.addEventListener('input', () => {
+      if (form.checkValidity()) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      showFormMessage('login-msg', 'Logging in...', 'accent');
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('login-msg', data.error || 'Login failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('login-msg', 'Login successful! Redirecting...', 'success');
+          setTimeout(() => window.location.href = 'index.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('login-msg', 'Could not connect to server', 'error');
+      }
+    });
+  }
+
+  // Google / GitHub Auth handler
+  document.querySelectorAll('.auth-card .btn-ghost').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const provider = btn.textContent.trim().toLowerCase();
+      showFormMessage('login-msg', `Simulating ${provider} login...`, 'accent');
+      
+      try {
+        const response = await fetch('/api/auth/mock-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('login-msg', data.error || 'Login failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('login-msg', `${provider} login successful! Redirecting...`, 'success');
+          setTimeout(() => window.location.href = 'index.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('login-msg', 'Could not connect to server', 'error');
+      }
+    });
   });
 }
 
 function initSignupForm() {
   const form = document.getElementById('signup-form');
-  if (!form) return;
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const confirm = document.getElementById('confirm-password').value;
-    if (password !== confirm) {
-      showFormMessage('signup-msg', 'Passwords do not match.', 'error');
-      return;
-    }
-    // TODO: POST /api/auth/signup { username, email, password }
-    console.log('Signup attempt:', { username, email });
-    showFormMessage('signup-msg', 'Backend not connected. Implement POST /api/auth/signup', 'info');
+  if (form) {
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Initial state
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+
+    // Real-time validation
+    form.addEventListener('input', () => {
+      const pw = document.getElementById('password').value;
+      const cpw = document.getElementById('confirm-password').value;
+      
+      if (form.checkValidity() && pw === cpw) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        document.getElementById('signup-msg').style.display = 'none';
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+        
+        // Show subtle error if passwords don't match
+        if (pw && cpw && pw !== cpw) {
+           showFormMessage('signup-msg', 'Passwords do not match', 'error');
+        } else {
+           document.getElementById('signup-msg').style.display = 'none';
+        }
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm-password').value;
+      
+      if (password !== confirm) {
+        return showFormMessage('signup-msg', 'Passwords do not match.', 'error');
+      }
+      
+      showFormMessage('signup-msg', 'Creating account...', 'accent');
+      
+      try {
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('signup-msg', data.error || 'Signup failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('signup-msg', 'Account created! Redirecting...', 'success');
+          setTimeout(() => window.location.href = 'index.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('signup-msg', 'Could not connect to server', 'error');
+      }
+    });
+  }
+
+  // Google / GitHub Auth handler
+  document.querySelectorAll('.auth-card .btn-ghost').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const provider = btn.textContent.trim().toLowerCase();
+      showFormMessage('signup-msg', `Simulating ${provider} signup...`, 'accent');
+      
+      try {
+        const response = await fetch('/api/auth/mock-oauth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showFormMessage('signup-msg', data.error || 'Signup failed', 'error');
+        } else {
+          sessionStorage.setItem('codearena_user', JSON.stringify(data.user));
+          sessionStorage.setItem('codearena_token', data.token);
+          showFormMessage('signup-msg', `${provider} signup successful! Redirecting...`, 'success');
+          setTimeout(() => window.location.href = 'index.html', 800);
+        }
+      } catch (err) {
+        showFormMessage('signup-msg', 'Could not connect to server', 'error');
+      }
+    });
   });
 }
 

@@ -91,44 +91,64 @@
   <div id="footer"></div>
   <script src="js/script.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const featured = [
-        { id: 1, title: "Two Sum", difficulty: "Easy", tags: ["Array", "Hash Table"], acceptance: 49.1 },
-        { id: 3, title: "Longest Substring Without Repeating Characters", difficulty: "Medium", tags: ["Sliding Window", "String"], acceptance: 33.8 },
-        { id: 4, title: "Median of Two Sorted Arrays", difficulty: "Hard", tags: ["Binary Search", "Divide and Conquer"], acceptance: 36.1 }
-      ];
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Load Featured Problems dynamically
+      try {
+        const probRes = await fetch('data/problems.json');
+        if (probRes.ok) {
+          const allProblems = await probRes.json();
+          // Pick top 3 problems dynamically
+          const featured = allProblems.slice(0, 3);
+          document.getElementById('featured-problems').innerHTML = featured.map(p => `
+            <div class="card card-interactive" style="display:flex;flex-direction:column;gap:0.75rem">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted)">${p.acceptance}% acceptance</span>
+              </div>
+              <div>
+                <a href="problem.html?id=${p.id}" style="color:var(--text-primary);font-weight:600;font-size:0.95rem;letter-spacing:-0.01em">${p.title}</a>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:2px">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+              <a href="problem.html?id=${p.id}" class="btn btn-ghost btn-sm" style="margin-top:auto;width:100%">Solve</a>
+            </div>`).join('');
+        }
+      } catch (e) {
+        console.error("Failed to load featured problems", e);
+      }
 
-      document.getElementById('featured-problems').innerHTML = featured.map(p => `
-        <div class="card card-interactive" style="display:flex;flex-direction:column;gap:0.75rem">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span class="badge badge-${getDifficultyClass(p.difficulty)}">${p.difficulty}</span>
-            <span style="font-size:0.75rem;color:var(--text-muted)">${p.acceptance}% acceptance</span>
-          </div>
-          <div>
-            <a href="problem.html?id=${p.id}" style="color:var(--text-primary);font-weight:600;font-size:0.95rem;letter-spacing:-0.01em">${p.title}</a>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:2px">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
-          <a href="problem.html?id=${p.id}" class="btn btn-ghost btn-sm" style="margin-top:auto;width:100%">Solve</a>
-        </div>`).join('');
+      // 2. Load Upcoming Contests (currently from script.js dummy data)
+      const upcoming = typeof DUMMY_CONTESTS !== 'undefined' ? DUMMY_CONTESTS.filter(c => c.status === 'upcoming').slice(0, 2) : [];
+      if(upcoming.length) {
+        document.getElementById('upcoming-contests-home').innerHTML = upcoming.map(c => `
+          <div class="contest-card">
+            <div class="contest-status-pill pill-upcoming">Upcoming</div>
+            <div class="contest-name">${c.name}</div>
+            <div class="contest-meta">
+              <span class="contest-meta-item">${formatDate(c.start)}</span>
+              <span class="contest-meta-item">${c.duration}</span>
+              <span class="contest-meta-item">${c.problems} problems</span>
+            </div>
+            <div class="countdown-text" style="margin-bottom:1rem">Starts in ${getCountdown(c.start)}</div>
+            <div style="display:flex;gap:0.6rem">
+              <button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>
+              <a href="contests.html" class="btn btn-ghost btn-sm">Details</a>
+            </div>
+          </div>`).join('');
+      }
 
-      const upcoming = DUMMY_CONTESTS.filter(c => c.status === 'upcoming').slice(0, 2);
-      document.getElementById('upcoming-contests-home').innerHTML = upcoming.map(c => `
-        <div class="contest-card">
-          <div class="contest-status-pill pill-upcoming">Upcoming</div>
-          <div class="contest-name">${c.name}</div>
-          <div class="contest-meta">
-            <span class="contest-meta-item">${formatDate(c.start)}</span>
-            <span class="contest-meta-item">${c.duration}</span>
-            <span class="contest-meta-item">${c.problems} problems</span>
-          </div>
-          <div class="countdown-text" style="margin-bottom:1rem">Starts in ${getCountdown(c.start)}</div>
-          <div style="display:flex;gap:0.6rem">
-            <button class="btn btn-primary btn-sm" onclick="registerContest(${c.id})">Register</button>
-            <a href="contests.html" class="btn btn-ghost btn-sm">Details</a>
-          </div>
-        </div>`).join('');
-
-      document.getElementById('top-coders-tbody').innerHTML = DUMMY_USERS.slice(0, 5).map(u => {
+      // 3. Load Top Coders dynamically from the REAL Database
+      let topUsers = typeof DUMMY_USERS !== 'undefined' ? DUMMY_USERS.slice(0, 5) : [];
+      try {
+        const leadRes = await fetch('http://localhost:5000/api/leaderboard');
+        if (leadRes.ok) {
+          const dbUsers = await leadRes.json();
+          if (dbUsers.length > 0) topUsers = dbUsers.slice(0, 5);
+        }
+      } catch (e) {
+        console.warn("Using fallback leaderboard data for homepage");
+      }
+      
+      document.getElementById('top-coders-tbody').innerHTML = topUsers.map(u => {
         const rankClass = u.rank === 1 ? 'rank-gold' : u.rank === 2 ? 'rank-silver' : u.rank === 3 ? 'rank-bronze' : 'rank-num';
         return `<tr>
           <td><span class="${rankClass}">${u.rank}</span></td>
@@ -143,6 +163,15 @@
           <td style="font-weight:700;color:var(--purple)">${u.rating}</td>
         </tr>`;
       }).join('');
+      
+      // 4. Update Hero buttons if logged in
+      const heroActions = document.querySelector('.hero-actions');
+      if (heroActions && sessionStorage.getItem('codearena_token')) {
+         heroActions.innerHTML = `
+           <a href="dashboard.html" class="btn btn-primary btn-lg">Go to Dashboard</a>
+           <a href="problems.html" class="btn btn-ghost btn-lg">Continue Practicing</a>
+         `;
+      }
     });
   </script>
 </body>
